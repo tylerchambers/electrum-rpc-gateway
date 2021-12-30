@@ -41,8 +41,8 @@ func (p *Peer) IsValid() bool {
 }
 
 // NewPeer returns a valid electrum peer.
-func NewPeer(host string, version string, isOnion bool, SSLPort int, TCPPort int, PruningLimit int) *Peer {
-	return &Peer{Host: host, Version: version, IsOnion: isOnion, SSLPort: SSLPort, TCPPort: TCPPort, PruningLimit: PruningLimit}
+func NewPeer(host string, IP string, version string, isOnion bool, SSLPort int, TCPPort int, PruningLimit int) *Peer {
+	return &Peer{Host: host, IP: IP, Version: version, IsOnion: isOnion, SSLPort: SSLPort, TCPPort: TCPPort, PruningLimit: PruningLimit}
 }
 
 // ServerPeersSubscriptionResp represents a response from server.peers.subscribe.
