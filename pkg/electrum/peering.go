@@ -1,63 +1,33 @@
 package electrum
 
 import (
+	"encoding/json"
 	"errors"
-	"net"
-	"regexp"
+	"fmt"
 	"strconv"
-	"strings"
 )
 
-// Peer represents a peer on the electrum network.
-type Peer struct {
-	Host         string
-	IP           string
-	Version      string
-	IsOnion      bool
-	SSLPort      int
-	TCPPort      int
-	PruningLimit int
-}
-
-// Features represents features of an electrum server.
-type Features struct {
-	Version      string
-	SSLPort      int
-	TCPPort      int
-	PruningLimit int
-}
-
-// RegisterFeatures applies the listed features to the given peer.
-func (p *Peer) RegisterFeatures(f *Features) {
-	p.Version = f.Version
-	p.SSLPort = f.SSLPort
-	p.TCPPort = f.TCPPort
-	p.PruningLimit = f.PruningLimit
-}
-
-// IsValid returns true if a peer has the minimum we need to connect.
-func (p *Peer) IsValid() bool {
-	return (ValidIP(p.IP) || ValidHostname(p.Host)) && (p.SSLPort > 0 || p.TCPPort > 0)
-}
-
-// NewPeer returns a valid electrum peer.
-func NewPeer(host string, IP string, version string, isOnion bool, SSLPort int, TCPPort int, PruningLimit int) *Peer {
-	return &Peer{Host: host, IP: IP, Version: version, IsOnion: isOnion, SSLPort: SSLPort, TCPPort: TCPPort, PruningLimit: PruningLimit}
+// NewPeerRequest is a convenience function for creation a server.peers.subscribe request.
+func NewPeerRequest(id int) *JSONRPCRequest {
+	req := new(JSONRPCRequest)
+	reqStr := fmt.Sprintf(`{"jsonrpc":"2.0","method":"server.peers.subscribe","params":[],"id":"%d"}`, id)
+	_ = json.Unmarshal([]byte(reqStr), req)
+	return req
 }
 
 // ServerPeersSubscriptionResp represents a response from server.peers.subscribe.
 type ServerPeersSubscriptionResp struct {
-	Id      string          `json:"id"`
+	ID      string          `json:"id"`
 	Version string          `json:"jsonrpc"`
 	Result  [][]interface{} `json:"result"`
 }
 
 // ParseServerPeersSubscriptionResp returns a proper slice of validated peers from a ServerPeersSubscriptionResp.
-func ParseServerPeersSubscriptionResp(resp *ServerPeersSubscriptionResp) ([]Peer, error) {
+func ParseServerPeersSubscriptionResp(resp *ServerPeersSubscriptionResp) ([]Node, error) {
 	if resp.Result == nil {
 		return nil, errors.New("invalid message: response to parse contained a nil result field")
 	}
-	var peers []Peer
+	var peers []Node
 	for _, peer := range resp.Result {
 		p := ParsePeer(peer)
 		if p != nil {
@@ -72,8 +42,8 @@ func ParseServerPeersSubscriptionResp(resp *ServerPeersSubscriptionResp) ([]Peer
 
 // ParsePeer parses a peer from the array of peers in the response from a server.peers.subscribe request.
 // Returns nil if the peer is invalid.
-func ParsePeer(peer []interface{}) *Peer {
-	newPeer := new(Peer)
+func ParsePeer(peer []interface{}) *Node {
+	newPeer := new(Node)
 	if ValidPeerResponse(peer) {
 		// First element of resp. should always be an IP or an onion addr.
 		if ValidIP(peer[0].(string)) {
@@ -82,8 +52,6 @@ func ParsePeer(peer []interface{}) *Peer {
 		// Second element is either the same IP, or a Hostname
 		if !ValidIP(peer[1].(string)) && ValidHostname(peer[1].(string)) {
 			newPeer.Host = peer[1].(string)
-			// Set the IsOnion flag
-			newPeer.IsOnion = IsOnion(newPeer.Host)
 		}
 		// Third element is another array of info.
 		features := ParseServerFeatures(peer[2].([]interface{}))
@@ -109,23 +77,6 @@ func ValidPeerResponse(peer []interface{}) bool {
 		}
 	}
 	return true
-}
-
-// ValidHostname returns true if the hostname is valid.
-func ValidHostname(hostname string) bool {
-	re, _ := regexp.Compile(`^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$`)
-	return re.MatchString(hostname)
-}
-
-// IsOnion checks if a hostname is a .onion address.
-func IsOnion(addr string) bool {
-	return strings.HasSuffix(addr, ".onion")
-}
-
-// ValidIP checks if a string is an IP address that is not local / loopback.
-func ValidIP(s string) bool {
-	ip := net.ParseIP(s)
-	return ip != nil && !(ip.IsPrivate() || ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast())
 }
 
 // ParseServerFeatures parses the third element of the response array, containing server features.

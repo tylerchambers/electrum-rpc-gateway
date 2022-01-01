@@ -1,55 +1,28 @@
 package main
 
 import (
-	"bufio"
-	"encoding/json"
 	"fmt"
 	"github.com/tylerchambers/electrumrelay/pkg/electrum"
+	"github.com/tylerchambers/electrumrelay/pkg/relay"
 	"log"
-	"net"
 )
 
 func main() {
-	conn, err := net.Dial("tcp", "de.poiuty.com:50002")
-	if err != nil {
-		fmt.Println("1")
-		panic(err)
+	initialNode := &electrum.Node{
+		Host:         "electrum.blockstream.info",
+		IP:           "",
+		Version:      "",
+		SSLPort:      50002,
+		TCPPort:      0,
+		PruningLimit: 0,
 	}
-	log.Println("connected!")
-	defer conn.Close()
-	m := new(electrum.JSONRPCRequest)
-	req := `{"jsonrpc":"2.0","method":"server.peers.subscribe","params":[],"id":64}`
-	json.Unmarshal([]byte(req), m)
-	fmt.Println(m)
-	if err != nil {
-		fmt.Println("2")
-		panic(err)
-	}
-	reqbytes, err := json.Marshal(m)
-	_, err = fmt.Fprintf(conn, "%s\n", reqbytes)
+	r := new(relay.Relay)
+	err := r.Init(initialNode)
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err != nil {
-		fmt.Println("3")
-		log.Fatal(err)
+	for _, v := range r.Peers {
+		fmt.Println(v)
 	}
-	log.Println("request sent!")
-	respBytes, _ := bufio.NewReader(conn).ReadBytes(byte('\n'))
-	fmt.Println("got bytes:")
-	fmt.Println(string(respBytes))
-	resp := new(electrum.ServerPeersSubscriptionResp)
-	fmt.Println("unmarshalling")
-	err = json.Unmarshal(respBytes, resp)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println("response successfully marshalled...")
-	fmt.Print(resp)
-	fmt.Println("Parsing the response...")
-	parsed, err := electrum.ParseServerPeersSubscriptionResp(resp)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(parsed)
+
 }
