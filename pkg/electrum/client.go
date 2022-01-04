@@ -1,6 +1,7 @@
 package electrum
 
 import (
+	"bufio"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
@@ -15,6 +16,11 @@ type Client struct {
 	InfoLogger    *log.Logger
 	WarningLogger *log.Logger
 	ErrorLogger   *log.Logger
+}
+
+// NewClient creates a new electrum client.
+func NewClient(infoLogger *log.Logger, warningLogger *log.Logger, errorLogger *log.Logger) *Client {
+	return &Client{InfoLogger: infoLogger, WarningLogger: warningLogger, ErrorLogger: errorLogger}
 }
 
 // Connect tries to connect to a node in the following order: Tor, TLS, TCP.
@@ -68,7 +74,7 @@ func (c *Client) GetTLSConn(n *Node, timeout time.Duration) (*tls.Conn, error) {
 	connStr := fmt.Sprintf("%s:%d", n.Host, n.SSLPort)
 	conn, err := tls.DialWithDialer(dialer, "tcp", connStr, conf)
 	if err != nil {
-		c.ErrorLogger.Printf("error establishing TLS connection to: %s\n: %v", n.Host, err)
+		c.ErrorLogger.Printf("error establishing TLS connection to: %s\n: %v", connStr, err)
 		return nil, fmt.Errorf("could not establish TLS connection to %s: %v", connStr, err)
 	}
 	c.InfoLogger.Printf("successfully established TLS connection to %s\n", connStr)
@@ -96,14 +102,35 @@ func (c *Client) GetConn(n *Node, timeout time.Duration) (net.Conn, error) {
 func (c *Client) SendRequest(req *JSONRPCRequest, n *Node, timeout time.Duration) ([]byte, error) {
 	c.InfoLogger.Printf("attempting to connect to %s\n", n.Host)
 	conn, err := c.Connect(n, timeout)
-	c.InfoLogger.Printf("sending request ID: %s to: %s\n", req.ID, n.Host)
+	c.InfoLogger.Printf("sending request ID: %d to: %s\n", req.ID, n.Host)
 	resp, err := req.Send(conn)
 	if err != nil {
-		c.ErrorLogger.Printf("error sending request ID: %s to: %s: %v\n", req.ID, n.Host, err)
+		c.ErrorLogger.Printf("error sending request ID: %d to: %s: %v\n", req.ID, n.Host, err)
 		connErr := conn.Close()
 		if connErr != nil {
-			c.ErrorLogger.Printf("could not close connection to: %s after failed request ID: %s: %v\n", n.Host, req.ID, connErr)
+			c.ErrorLogger.Printf("could not close connection to: %s after failed request ID: %d: %v\n", n.Host, req.ID, connErr)
 		}
+		return nil, err
+	}
+	_ = conn.Close()
+	return resp, nil
+}
+
+func (c *Client) SendRequestBytes(req []byte, n *Node, timeout time.Duration) ([]byte, error) {
+	c.InfoLogger.Printf("attempting to connect to %s\n", n.Host)
+	conn, err := c.Connect(n, timeout)
+	if err != nil {
+		return nil, err
+	}
+	c.InfoLogger.Printf("sending request: %s to: %s\n", string(req), n.Host)
+	fmt.Println(conn)
+	_, err = fmt.Fprintf(conn, "%s", string(req)+"\n")
+	if err != nil {
+		return nil, err
+	}
+	resp, _ := bufio.NewReader(conn).ReadBytes(byte('\n'))
+	fmt.Println(string(resp))
+	if err != nil {
 		return nil, err
 	}
 	_ = conn.Close()

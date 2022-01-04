@@ -1,28 +1,33 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/tylerchambers/electrumrelay/pkg/electrum"
-	"github.com/tylerchambers/electrumrelay/pkg/relay"
+	"io"
 	"log"
+	"net/http"
 )
 
 func main() {
-	initialNode := &electrum.Node{
-		Host:         "electrum.blockstream.info",
-		IP:           "",
-		Version:      "",
-		SSLPort:      50002,
-		TCPPort:      0,
-		PruningLimit: 0,
-	}
-	r := new(relay.Relay)
-	err := r.Init(initialNode)
+	req := new(electrum.JSONRPCRequest)
+	reqStr := fmt.Sprintf(`{"jsonrpc":"2.0","method":"blockchain.transaction.get","params":["d5845a4c59d7d3e86ab83650491ef2294552896599d036a440c08c52234e88f9", true],"id":0}`)
+	err := json.Unmarshal([]byte(reqStr), req)
 	if err != nil {
 		log.Fatal(err)
 	}
-	for _, v := range r.Peers {
-		fmt.Println(v)
+
+	resp, err := http.Post("http://localhost:8080/", "application/json", bytes.NewBuffer([]byte(reqStr)))
+	if err != nil {
+		log.Fatal(err)
 	}
 
+	b, err := io.ReadAll(resp.Body)
+	fmt.Printf(string(b))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(string(b))
 }

@@ -10,14 +10,14 @@ import (
 // NewPeerRequest is a convenience function for creation a server.peers.subscribe request.
 func NewPeerRequest(id int) *JSONRPCRequest {
 	req := new(JSONRPCRequest)
-	reqStr := fmt.Sprintf(`{"jsonrpc":"2.0","method":"server.peers.subscribe","params":[],"id":"%d"}`, id)
+	reqStr := fmt.Sprintf(`{"jsonrpc":"2.0","method":"server.peers.subscribe","params":[],"id":%d}`, id)
 	_ = json.Unmarshal([]byte(reqStr), req)
 	return req
 }
 
 // ServerPeersSubscriptionResp represents a response from server.peers.subscribe.
 type ServerPeersSubscriptionResp struct {
-	ID      string          `json:"id"`
+	ID      int             `json:"id"`
 	Version string          `json:"jsonrpc"`
 	Result  [][]interface{} `json:"result"`
 }
