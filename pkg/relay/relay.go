@@ -2,13 +2,14 @@ package relay
 
 import (
 	"fmt"
-	"github.com/tylerchambers/electrumrelay/pkg/electrum"
 	"io"
 	"math/rand"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/tylerchambers/electrumrelay/pkg/electrum"
 )
 
 // Relay represents an electrum relay.
@@ -22,7 +23,7 @@ type Relay struct {
 
 // NewRelay constructs a new JSON RPC Relay.
 func NewRelay(peers []electrum.Node, forbiddenMethods []string, electrumClient *electrum.Client) *Relay {
-	return &Relay{Peers: peers, ForbiddenMethods: forbiddenMethods, ElectrumClient: electrumClient}
+	return &Relay{Peers: peers, PeerMutex: sync.Mutex{}, ForbiddenMethods: forbiddenMethods, ElectrumClient: electrumClient}
 }
 
 func (r *Relay) NoOnions() []electrum.Node {
