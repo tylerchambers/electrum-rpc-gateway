@@ -45,6 +45,6 @@ jobs:
         golint ./pkg/relay
     
     - name: Run coverage
-        run: go test ./pkg/* -race -coverprofile=coverage.out -covermode=atomic
-      - name: Upload coverage to Codecov
-        run: bash <(curl -s https://codecov.io/bash)
+      run: go test ./pkg/* -race -coverprofile=coverage.out -covermode=atomic
+    - name: Upload coverage to Codecov
+      run: bash <(curl -s https://codecov.io/bash)
