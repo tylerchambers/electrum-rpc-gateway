@@ -94,7 +94,7 @@ func TestParseServerFeatures(t *testing.T) {
 }
 
 func validElectrumServerPeersSubscriptionRespJSON() *ServerPeersSubscriptionResp {
-	str := `{"id":"","jsonrpc":"2.0","result":[["164.132.182.11","1.fulcrum-node.com",["v1.4.5","s50002"]],["213.152.106.56","electrum.pabu.io",["v1.4.2","s50002"]],["144.76.84.234","electrum.jochen-hoenicke.de",["v1.4.5","s50006","t50099"]]]}`
+	str := `{"id":0,"jsonrpc":"2.0","result":[["164.132.182.11","1.fulcrum-node.com",["v1.4.5","s50002"]],["213.152.106.56","electrum.pabu.io",["v1.4.2","s50002"]],["144.76.84.234","electrum.jochen-hoenicke.de",["v1.4.5","s50006","t50099"]]]}`
 	out := ServerPeersSubscriptionResp{}
 	err := json.Unmarshal([]byte(str), &out)
 	if err != nil {
