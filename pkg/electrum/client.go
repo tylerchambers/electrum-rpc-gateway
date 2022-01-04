@@ -102,6 +102,9 @@ func (c *Client) GetConn(n *Node, timeout time.Duration) (net.Conn, error) {
 func (c *Client) SendRequest(req *JSONRPCRequest, n *Node, timeout time.Duration) ([]byte, error) {
 	c.InfoLogger.Printf("attempting to connect to %s\n", n.Host)
 	conn, err := c.Connect(n, timeout)
+	if err != nil {
+		return nil, fmt.Errorf("could not connect to %s: %v", n.Host, err)
+	}
 	c.InfoLogger.Printf("sending request ID: %d to: %s\n", req.ID, n.Host)
 	resp, err := req.Send(conn)
 	if err != nil {
