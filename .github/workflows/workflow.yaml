@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: CICD
+name: Build & Test
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch
@@ -32,18 +32,19 @@ jobs:
     - name: Setup Go
       uses: actions/setup-go@v2
       with:
-        go-version: '1.14.0' # The Go version to download (if necessary) and use.
+        go-version: '1.17.5' # The Go version to download (if necessary) and use.
             
     # Run build of the application
     - name: Run build
-      run: go build . 
+      run: go build ./cmd/client  && go build ./cmd/server
       
     # Run vet & lint on the code
     - name: Run vet & lint
       run: |
-        go vet .
-        golint .
+        go vet ./pkg/electrum
+        golint ./pkg/relay
     
-    # Run testing on the code
-    - name: Run testing
-      run: cd test && go test -v
+    - name: Run coverage
+        run: go test ./pkg/* -race -coverprofile=coverage.out -covermode=atomic
+      - name: Upload coverage to Codecov
+        run: bash <(curl -s https://codecov.io/bash)
