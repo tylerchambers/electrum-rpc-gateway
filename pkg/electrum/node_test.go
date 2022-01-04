@@ -39,7 +39,6 @@ func TestNewNode(t *testing.T) {
 		host         string
 		ip           string
 		version      string
-		isOnion      bool
 		SSLPort      int
 		TCPPort      int
 		PruningLimit int
